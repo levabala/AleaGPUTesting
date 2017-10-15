@@ -8,9 +8,6 @@ namespace lms
 {
     class SummatorCPU : Summator
     {
-		/*public static double[][] channels; //detector - channel_value
-		public static int channelsCount, channelWidth, strob;
-		public static int[] detectors;*/
         public SummatorCPU(int channelsCount, int channelWidth, int[] detectors, int strob) 
             : base(channelsCount, channelWidth, detectors, strob)
         {
@@ -26,7 +23,7 @@ namespace lms
                 {
                     int k1 = ch - strob; if (k1 < 0) k1 = 0;
                     int k2 = ch + strob; if (k2 > channelsCount - 1) k2 = channelsCount - 1;
-                    for (int k = k1; k < k2; k++) channels[detector][k] += 1;
+                    for (int k = k1; k < k2; k++) s[k] += 1;
                 });
             }            
         }
