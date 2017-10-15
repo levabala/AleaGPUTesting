@@ -14,10 +14,12 @@ namespace lms
         public static void Parse(
             List<string> filesNames, int strob, int channelsCount, int channelWidth, 
             int framesCount, int tau, double[] kt, int[] detectors, int channel0,
-			ParameterizedThreadStart SummatorCall)
+			Action<object> SummatorCall, Action ParsingCompleted)
 		{
 			int frame = 0;
 			int save_count = 0;
+            int threadsAlive = 0;
+            bool parsingFinished = false;            
 			HashSet<int> detectorsHashSet = new HashSet<int>(detectors);			
 
 			for (int k = 0; k < filesNames.Count; k++)
@@ -93,23 +95,34 @@ namespace lms
 									int neutronsDelta = neutronsCount - lastFrameNeutrons;
 									lastFrameNeutrons = neutronsCount;
 
-									int[][] array = new int[neutrons.Length][];
-									for (int ii = 0; ii < array.Length; ii++)
-										array[ii] = neutrons[ii].ToArray();
+                                    if (threadsAlive == 0)
+                                    {
+                                        int[][] array = new int[neutrons.Length][];
+                                        for (int ii = 0; ii < array.Length; ii++)
+                                            array[ii] = neutrons[ii].ToArray();
 
-									Thread summatorThread = new Thread(SummatorCall);
-									summatorThread.IsBackground = true;
-									summatorThread.Start(array);
+                                        Thread summatorThread = new Thread((object arg) =>
+                                        {
+                                            SummatorCall(arg);
+                                            threadsAlive--;
+                                            if (parsingFinished)
+                                                ParsingCompleted();
+                                        });
+                                        summatorThread.IsBackground = true;
+                                        summatorThread.Start(array);
+                                        threadsAlive++;
 
-									for (int d = 0; d < neutrons.Length; d++)									
-										neutrons[d] = new List<int>();									
+                                        for (int d = 0; d < neutrons.Length; d++)
+                                            neutrons[d] = new List<int>();
+
+                                    }
 
 									speed_x = (float)(spec_time / sw.Elapsed.TotalSeconds);
 									speed_mbs = (float)(buf.Length / sw2.Elapsed.TotalSeconds / 1000000.0);
 
-									Console.WriteLine(
-										"save: {0,5}  time: {1,6:f2}  frame: {2,6}  speed: {3,6:f2}x  neutronsCount: {4}  neutronsDelta: {5}", 
-										save_count, spec_time, frame, speed_x, neutronsCount, neutronsDelta);
+                                    Console.WriteLine(
+                                        "save: {0,5}  time: {1,6:f2}  frame: {2,6}  speed: {3,6:f2}x threads: {4}",//  neutronsCount: {4}  neutronsDelta: {5}", 
+                                        save_count, spec_time, frame, speed_x, threadsAlive);// neutronsCount, neutronsDelta);
 								}
 								break;
 						}
@@ -117,13 +130,14 @@ namespace lms
 
 						if (hi < detectors.Length && detectorsHashSet.Contains(hi))//detectors.Contains(hi))
 						{
-							long t = (long)lo | ((long)f4) << 24;
-							if (t > fbeg && fbeg > fend)
+							long t = (long)lo | ((long)f4) << 24;                            
+                            if (t > fbeg && fbeg > fend)
 							{
 								float tmks = (float)((t - fbeg) * 16e-3);
-								int tch = (int)(tmks / tau * kt[hi]) - channel0;
+								int tch = (int)(tmks / tau * kt[hi]) - channel0;                                
 								if (tch >= 0 && tch < channelsCount)
 								{
+                                    //Console.WriteLine(tch);
 									neutrons[hi].Add(tch);
 									neutronsCount++;
 								}						
@@ -132,6 +146,10 @@ namespace lms
 					}
 				}
 			}
-		}
+
+            parsingFinished = true;
+            if (threadsAlive == 0)
+                ParsingCompleted();
+        }
     }
 }

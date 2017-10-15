@@ -80,16 +80,21 @@ namespace lms
         {			
 			init(args);
 
-			ParameterizedThreadStart summatorThreadStart = new ParameterizedThreadStart(SummatorCall);
+			//ParameterizedThreadStart summatorThreadStart = new ParameterizedThreadStart(SummatorCall);
 
-			summator = new SummatorCPU(ref_chan, max_mks, dets.ToArray(), strob);
-			Parser.Parse(namelist, strob, ref_chan, max_mks, ref_frames, ref_tau, kt, dets.ToArray(), ref_ch0, summatorThreadStart);
+			summator = new SummatorGPU(ref_chan, max_mks, dets.ToArray(), strob);
+			Parser.Parse(
+                namelist, strob, ref_chan, max_mks, ref_frames, ref_tau, 
+                kt, dets.ToArray(), ref_ch0, SummatorCall, ParsingComplete);
 
-			/*Visualizer visual = new Visualizer();			
-			visual.DrawSpec(summator.channels[0]);
-			visual.Show();*/
+			
 
             Console.ReadKey();
+        }
+
+        public static void ParsingComplete()
+        {
+            summator.SaveSpectrum(ref_out, 0);
         }
 
 		public static void SummatorCall(object arg)
@@ -148,15 +153,15 @@ namespace lms
 					{
 						case "-raw": names.Add(args[i + 1]); break;
 						case "-det": if (int.TryParse(args[i + 1], out ref_det)) dets.Add(ref_det); break;
-						case "-mks": int.TryParse(args[i + 1], out max_mks); break;
+						case "-mks": int.TryParse(args[i + 1], out max_mks);  SetupMaxChan(max_mks); break;
 						//case "-hkl": ReadHKL(args[i + 1]); break;
-						//case "-tau": int.TryParse(args[i + 1], out ref_tau); break;
+						case "-tau": int.TryParse(args[i + 1], out ref_tau); break;
 						case "-delay1": int.TryParse(args[i + 1], out ref_delay1); break;
 						//case "-delay2": if (int.TryParse(args[i + 1], out ref_delay2)) Delay2Mks = ref_delay2; break;
-						//case "-chan": if (int.TryParse(args[i + 1], out ref_chan))
-						//		SetupMaxMks(ref_chan); break;
-						//case "-ch0": if (int.TryParse(args[i + 1], out ref_ch0))
-						//		SetupMaxMks(ref_chan); break;
+						case "-chan": if (int.TryParse(args[i + 1], out ref_chan))
+								SetupMaxMks(ref_chan); break;
+						case "-ch0": if (int.TryParse(args[i + 1], out ref_ch0))
+								SetupMaxMks(ref_chan); break;
 						case "-strob": int.TryParse(args[i + 1], out ref_strob); break;
 						case "-phase": double.TryParse(args[i + 1], out ref_phase); break;
 						case "-r": if (double.TryParse(args[i + 1], out ref_r)) ref_k = 1 / ref_r; break;
@@ -166,7 +171,8 @@ namespace lms
 						//case "-run": run = true; break;
 						//case "-pos": if (int.TryParse(args[i + 1], out ref_pos)) c.invert = (ref_pos == 1 ? true : false); break;
 						//case "-deb": c.debounce = true; break;
-						//case "-w": int.TryParse(args[i + 1], out ref_tau); SetupMaxChan(max_mks); break;
+						case "-w": int.TryParse(args[i + 1], out ref_tau);
+                            SetupMaxChan(max_mks); break;
 						case "-o": ref_out = args[i + 1]; break;
 						//case "-anal": anal = true; break;
 						//case "-avg": avg = true; break;
@@ -239,5 +245,11 @@ namespace lms
 				if (l[i] == l[i - 1]) l.RemoveAt(i);
 			}
 		}
+
+        static void SetupMaxChan(int max_mks)
+        { ref_chan = (max_mks - ref_ch0 * ref_tau) / ref_tau; }
+
+        static void SetupMaxMks(int max_chan)
+        { max_mks = (max_chan - ref_ch0) * ref_tau; }
     }
 }

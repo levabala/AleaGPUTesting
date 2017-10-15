@@ -9,22 +9,26 @@ using Alea.Parallel;
 namespace lms
 {
     class SummatorGPU : Summator
-    {		
-		static DeviceMemory<double>[] memory;		
-		static Gpu gpu;
+    {        
+        static DeviceMemory<int>[] memory;		
+		static Gpu gpu;        
         public SummatorGPU(int channelsCount, int channelWidth, int[] detectors, int strob) 
             : base(channelsCount, channelWidth, detectors, strob)
         {
 			initGpu(detectors.Length, channelsCount);
+
+            PreSaveAction = () => {
+                CopySpectrumFromDevice();
+            };
         }
 		
 		private static void initGpu(int ds, int chc){
 			gpu = Gpu.Default;
-			memory = new DeviceMemory<double>[ds];
+			memory = new DeviceMemory<int>[ds];
 			for (int i = 0; i < ds; i++)
 			{
-				memory[i] = gpu.AllocateDevice<double>(chc);
-				deviceptr<double> ptr = memory[i].Ptr;
+				memory[i] = gpu.AllocateDevice<int>(chc);
+				deviceptr<int> ptr = memory[i].Ptr;
 			}						
 		}
 				
@@ -32,6 +36,13 @@ namespace lms
 		{
 			AddValuesGPU(neutrons);
 		}
+
+        public int[][] CopySpectrumFromDevice()
+        {
+            for (int i = 0; i < memory.Length; i++)
+                spectrum[i] = Gpu.CopyToHost(memory[i]);
+            return spectrum;
+        }
 		
 		private static void AddValuesGPU(int[][] neutrons)
 		{
@@ -40,7 +51,7 @@ namespace lms
 
 			for (int i = 0; i < neutrons.Length; i++)
 			{
-				deviceptr<double> ptr = memory[i].Ptr;
+				deviceptr<int> ptr = memory[i].Ptr;
 				int[] array = new int[neutrons[i].Length];
 				gpu.For(0, array.Length, index =>
 				{
@@ -49,7 +60,9 @@ namespace lms
 					if (k1 < 0) k1 = 0;
 					int k2 = ch + s; if (k2 > c - 1) k2 = c - 1;
 					for (int k = k1; k < k2; k++) ptr[k] += 1;
-				});				
+				});
+
+                var data = Gpu.CopyToHost(memory[i]);
 			}			
 		}
     }

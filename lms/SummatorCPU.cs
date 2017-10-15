@@ -26,7 +26,7 @@ namespace lms
                 {
                     int k1 = ch - strob; if (k1 < 0) k1 = 0;
                     int k2 = ch + strob; if (k2 > channelsCount - 1) k2 = channelsCount - 1;
-                    for (int k = k1; k < k2; k++) channels[detector][k] += 1;
+                    for (int k = k1; k < k2; k++) spectrum[detector][k] += 1;
                 });
             }            
         }
