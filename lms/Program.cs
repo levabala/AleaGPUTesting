@@ -82,13 +82,11 @@ namespace lms
 
 			//ParameterizedThreadStart summatorThreadStart = new ParameterizedThreadStart(SummatorCall);
                     
-			summator = new SummatorGPU(ref_chan, max_mks, dets.ToArray(), strob);
+			summator = new SummatorCPU(ref_chan, max_mks, dets.ToArray(), strob);
 			Parser.Parse(
                 namelist, strob, ref_chan, max_mks, ref_frames, ref_tau, 
                 kt, dets.ToArray(), ref_ch0, SummatorCall, ParsingComplete);
-
 			
-
             Console.ReadKey();
         }
 
@@ -101,11 +99,9 @@ namespace lms
         public static void SummatorCall(object arg, int number, ref int savesDone)
 		{
 			int[][] neutrons = arg as int[][];
-			summator.AddValues(neutrons);
-            lock (myLock) {
-                summator.SaveSpectrum(ref_out, number);
-                savesDone++;
-            }
+            int[][] spectr = summator.CalcFrame(neutrons);
+            summator.SaveSpectrum(ref_out, number, spectr);
+            savesDone++;
         }
 
 		public static void init(string[] args)

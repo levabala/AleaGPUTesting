@@ -20,20 +20,26 @@ namespace lms
 			channelWidth = chwidth;
 			detectors = dets;
 			strob = strob_value;
-            initSpectrumArray();
-        }
+            spectrum = createSpectrumArray();
+        }        
 
-        protected void initSpectrumArray()
+        protected int[][] createSpectrumArray()
         {
-            spectrum = new int[detectors.Length][];
-            for (int i = 0; i < spectrum.Length; i++)
-                spectrum[i] = new int[channelsCount];
+            int[][] spectr = new int[detectors.Length][];
+            for (int i = 0; i < spectr.Length; i++)
+                spectr[i] = new int[channelsCount];
+            return spectr;
         }
 
 		virtual public void AddValues(int[][] neutrons) //detector - neutron_channel
         {
 
         }  
+
+        virtual public int[][] CalcFrame(int[][] frame)
+        {
+            return createSpectrumArray();
+        }
         
         virtual public int[][] GetSpectrum()
         {
@@ -41,16 +47,22 @@ namespace lms
         }
 
         public void ClearSpectrum()
-        {
-            spectrum = new int[detectors.Length][];
+        {            
             for (int i = 0; i < spectrum.Length; i++)
-                spectrum[i] = new int[channelsCount];
+                Parallel.For(0, spectrum[i].Length, index =>
+                {
+                    spectrum[i][index] = 0;
+                });                
         }
         
         public void SaveSpectrum(string folder, int num)
         {
             int[][] spectr = GetSpectrum();
+            SaveSpectrum(folder, num, spectr);
+        }
 
+        public void SaveSpectrum(string folder, int num, int[][] spectr)
+        {            
             int[] ss = new int[channelsCount];
             foreach (int j in detectors) //=0; j<max_det; j++)
             {
@@ -63,8 +75,7 @@ namespace lms
                 for (int i = 0; i < s.Length; i++)
                 {
                     bw.Write(s[i]);
-                    ss[i] += s[i];
-                    s[i] = 0;
+                    ss[i] += s[i];                    
                 }
                 bw.Close();
 

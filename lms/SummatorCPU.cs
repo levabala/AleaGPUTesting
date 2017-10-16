@@ -20,22 +20,40 @@ namespace lms
         public override int[][] GetSpectrum()
         {
             int[][] output = spectrum.ToArray();
-            initSpectrumArray();
+            spectrum = createSpectrumArray();
             return output;
         }
 
-        public override void AddValues(int[][] neutrons)
+        public override int[][] CalcFrame(int[][] frame)
         {
+            int[][] spectr = createSpectrumArray();
+            for (int detector = 0; detector < frame.Length; detector++)
+            {
+                int[] s = frame[detector];
+                Parallel.For(0, s.Length, i =>
+                {
+                    int ch = s[i];
+                    int k1 = ch - strob; if (k1 < 0) k1 = 0;
+                    int k2 = ch + strob; if (k2 > channelsCount - 1) k2 = channelsCount - 1;
+                    for (int k = k1; k < k2; k++) spectr[detector][k] += 1;
+                });
+            }
+            return spectr;
+        }
+
+        public override void AddValues(int[][] neutrons)
+        {            
             for (int detector = 0; detector < neutrons.Length; detector++)            
             {
                 int[] s = neutrons[detector];
-                Parallel.For(0, s.Length, ch =>
+                Parallel.For(0, s.Length, i =>
                 {
+                    int ch = s[i];
                     int k1 = ch - strob; if (k1 < 0) k1 = 0;
                     int k2 = ch + strob; if (k2 > channelsCount - 1) k2 = channelsCount - 1;
                     for (int k = k1; k < k2; k++) spectrum[detector][k] += 1;
                 });
-            }            
+            }
         }
     }
 }
