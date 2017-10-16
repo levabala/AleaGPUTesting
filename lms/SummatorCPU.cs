@@ -17,6 +17,13 @@ namespace lms
             
         }
 
+        public override int[][] GetSpectrum()
+        {
+            int[][] output = spectrum.ToArray();
+            initSpectrumArray();
+            return output;
+        }
+
         public override void AddValues(int[][] neutrons)
         {
             for (int detector = 0; detector < neutrons.Length; detector++)            

@@ -17,9 +17,9 @@ namespace lms
         {
 			initGpu(detectors.Length, channelsCount);
 
-            PreSaveAction = () => {
+            /*PreSaveAction = () => {
                 CopySpectrumFromDevice();
-            };
+            };*/
         }
 		
 		private static void initGpu(int ds, int chc){
@@ -37,6 +37,21 @@ namespace lms
 			AddValuesGPU(neutrons);
 		}
 
+        public override int[][] GetSpectrum()
+        {
+            int[][] output = CopySpectrumFromDevice();
+            for (int i = 0; i < detectors.Length; i++)
+            {                
+                deviceptr<int> ptr = memory[i].Ptr;
+                gpu.For(0, channelsCount, index =>
+                {
+                    ptr[index] = 0;
+                });
+            }
+            var data = Gpu.CopyToHost(memory[0]);
+            return output;
+        }
+
         public int[][] CopySpectrumFromDevice()
         {
             for (int i = 0; i < memory.Length; i++)
@@ -44,6 +59,7 @@ namespace lms
             return spectrum;
         }
 		
+        [GpuManaged]
 		private static void AddValuesGPU(int[][] neutrons)
 		{
 			int s = strob;
@@ -52,18 +68,17 @@ namespace lms
 			for (int i = 0; i < neutrons.Length; i++)
 			{
 				deviceptr<int> ptr = memory[i].Ptr;
-				int[] array = new int[neutrons[i].Length];
-				gpu.For(0, array.Length, index =>
-				{
-					int ch = array[index];
-					int k1 = ch - s;
-					if (k1 < 0) k1 = 0;
-					int k2 = ch + s; if (k2 > c - 1) k2 = c - 1;
-					for (int k = k1; k < k2; k++) ptr[k] += 1;
-				});
-
-                var data = Gpu.CopyToHost(memory[i]);
-			}			
+				//int[] array = new int[neutrons[i].Length];
+                gpu.For(0, neutrons[i].Length, index =>
+                {
+                    int ch = neutrons[i][index];
+                    int k1 = ch - s;
+                    if (k1 < 0) k1 = 0;
+                    int k2 = ch + s; if (k2 > c - 1) k2 = c - 1;
+                    for (int k = k1; k < k2; k++) ptr[k] += 1;
+                });
+                //var data = Gpu.CopyToHost(memory[i]);
+            }			
 		}
     }
 }

@@ -20,23 +20,36 @@ namespace lms
 			channelWidth = chwidth;
 			detectors = dets;
 			strob = strob_value;
-            spectrum = new int[dets.Length][];
-			for (int i = 0; i < spectrum.Length; i++)
+            initSpectrumArray();
+        }
+
+        protected void initSpectrumArray()
+        {
+            spectrum = new int[detectors.Length][];
+            for (int i = 0; i < spectrum.Length; i++)
                 spectrum[i] = new int[channelsCount];
         }
 
 		virtual public void AddValues(int[][] neutrons) //detector - neutron_channel
         {
 
-        }            
+        }  
+        
+        virtual public int[][] GetSpectrum()
+        {
+            return spectrum;
+        }
+
+        public void ClearSpectrum()
+        {
+            spectrum = new int[detectors.Length][];
+            for (int i = 0; i < spectrum.Length; i++)
+                spectrum[i] = new int[channelsCount];
+        }
         
         public void SaveSpectrum(string folder, int num)
         {
-            Console.WriteLine("Save");
-            if (isSavingNow)
-                return;
-            isSavingNow = true;
-            PreSaveAction();
+            int[][] spectr = GetSpectrum();
 
             int[] ss = new int[channelsCount];
             foreach (int j in detectors) //=0; j<max_det; j++)
@@ -45,7 +58,7 @@ namespace lms
                     folder 
                     + "\\" + "sp_" + j.ToString("d2")
                     + "." + num.ToString("d3");
-                int[] s = spectrum[j];                
+                int[] s = spectr[j];                
                 BinaryWriter bw = new BinaryWriter(File.OpenWrite(spname));
                 for (int i = 0; i < s.Length; i++)
                 {
@@ -65,7 +78,7 @@ namespace lms
             }
             bww.Close();
 
-            Console.WriteLine("Result saved to {0}", Environment.CurrentDirectory + "\\" + folder + "\\");
+            //Console.WriteLine("Result saved to {0}", Environment.CurrentDirectory + "\\" + folder + "\\");
             isSavingNow = false;
         }
     }

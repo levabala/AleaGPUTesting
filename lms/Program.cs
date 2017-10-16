@@ -81,7 +81,7 @@ namespace lms
 			init(args);
 
 			//ParameterizedThreadStart summatorThreadStart = new ParameterizedThreadStart(SummatorCall);
-
+                    
 			summator = new SummatorGPU(ref_chan, max_mks, dets.ToArray(), strob);
 			Parser.Parse(
                 namelist, strob, ref_chan, max_mks, ref_frames, ref_tau, 
@@ -94,14 +94,19 @@ namespace lms
 
         public static void ParsingComplete()
         {
-            summator.SaveSpectrum(ref_out, 0);
+            //summator.SaveSpectrum(ref_out, 0);
         }
 
-		public static void SummatorCall(object arg)
+        private static readonly object myLock = new object();
+        public static void SummatorCall(object arg, int number, ref int savesDone)
 		{
 			int[][] neutrons = arg as int[][];
-			summator.AddValues(neutrons);			
-		}
+			summator.AddValues(neutrons);
+            lock (myLock) {
+                summator.SaveSpectrum(ref_out, number);
+                savesDone++;
+            }
+        }
 
 		public static void init(string[] args)
 		{
