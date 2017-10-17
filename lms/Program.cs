@@ -78,11 +78,9 @@ namespace lms
 
 		static void Main(string[] args)
         {			
-			init(args);
-
-			//ParameterizedThreadStart summatorThreadStart = new ParameterizedThreadStart(SummatorCall);
+			init(args);			
                     
-			summator = new SummatorCPU(ref_chan, max_mks, dets.ToArray(), strob);
+			summator = new SummatorGPU(ref_chan, max_mks, dets.ToArray(), strob);
 			Parser.Parse(
                 namelist, strob, ref_chan, max_mks, ref_frames, ref_tau, 
                 kt, dets.ToArray(), ref_ch0, SummatorCall, ParsingComplete);

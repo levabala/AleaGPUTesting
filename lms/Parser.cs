@@ -29,10 +29,10 @@ namespace lms
 				string nam = filesNames[k];
 
 				FileStream fs = File.OpenRead(nam);
-				long len = fs.Length;
+				long len = fs.Length;               
 
 				BinaryReader br = new BinaryReader(fs);
-				long pos = 0;
+				long pos = 0;                
 
 				Stopwatch sw = Stopwatch.StartNew();
 
@@ -66,7 +66,7 @@ namespace lms
 				{
 					Stopwatch sw2 = Stopwatch.StartNew();
 
-					byte[] buf = br.ReadBytes(1000000);
+					byte[] buf = br.ReadBytes(1000000);                    
 					pos += buf.Length;					
 
 					for (int i = 0; i < buf.Length; i++)
@@ -96,38 +96,35 @@ namespace lms
 
 									int neutronsDelta = neutronsCount - lastFrameNeutrons;
 									lastFrameNeutrons = neutronsCount;
+                                    
+                                    int[][] array = new int[neutrons.Length][];
+                                    for (int ii = 0; ii < array.Length; ii++)
+                                        array[ii] = neutrons[ii].ToArray();
 
-                                    //if (threadsAlive == 0)
-                                    //{
-                                        int[][] array = new int[neutrons.Length][];
-                                        for (int ii = 0; ii < array.Length; ii++)
-                                            array[ii] = neutrons[ii].ToArray();
+                                    Thread summatorThread = new Thread((object arg) =>
+                                    {
+                                        save_count++;
+                                        SummatorCall(arg, save_count, ref saves_done);
+                                        threadsAlive--;
 
-                                        Thread summatorThread = new Thread((object arg) =>
-                                        {
-                                            save_count++;
-                                            SummatorCall(arg, save_count, ref saves_done);
-                                            threadsAlive--;
-                                            if (parsingFinished)
-                                                Console.WriteLine("saves: {0}  threads: {1}", saves_done, threadsAlive);
-                                                //ParsingCompleted();
-                                        });
-                                        summatorThread.IsBackground = true;
-                                        summatorThread.Start(array);
-                                        threadsAlive++;
+                                        speed_x = (float)(spec_time / sw.Elapsed.TotalSeconds);
+                                        speed_mbs = (float)(buf.Length / sw2.Elapsed.TotalSeconds / 1000000.0);
 
-                                        for (int d = 0; d < neutrons.Length; d++)
-                                            neutrons[d] = new List<int>();
+                                        float parsing = ((float)pos / len) *  100;
 
-                                    //}
+                                        Console.WriteLine(
+                                        "saves: {0,5}  speed: {3,6:f2}x  threads: {4,2}  time: {1,8:f2}  frame: {2,6}  parsing: {5,4:f1}%",//  neutronsCount: {4}  neutronsDelta: {5}", 
+                                        saves_done, spec_time, frame, speed_x, threadsAlive, parsing);// neutronsCount, neutronsDelta);                                            
+                                            //Console.WriteLine("saves: {0}  threads: {1}", saves_done, threadsAlive);
+                                            //ParsingCompleted();
+                                    });
+                                    summatorThread.IsBackground = true;
+                                    summatorThread.Start(array);
+                                    threadsAlive++;
 
-									speed_x = (float)(spec_time / sw.Elapsed.TotalSeconds);
-									speed_mbs = (float)(buf.Length / sw2.Elapsed.TotalSeconds / 1000000.0);
-
-                                    Console.WriteLine(
-                                        "saves: {0,5}  time: {1,6:f2}  frame: {2,6}  speed: {3,6:f2}x threads: {4}",//  neutronsCount: {4}  neutronsDelta: {5}", 
-                                        saves_done, spec_time, frame, speed_x, threadsAlive);// neutronsCount, neutronsDelta);
-								}
+                                    for (int d = 0; d < neutrons.Length; d++)
+                                        neutrons[d] = new List<int>();                                        
+							        }
 								break;
 						}
 
@@ -140,8 +137,7 @@ namespace lms
 								float tmks = (float)((t - fbeg) * 16e-3);
 								int tch = (int)(tmks / tau * kt[hi]) - channel0;                                
 								if (tch >= 0 && tch < channelsCount)
-								{
-                                    //Console.WriteLine(tch);
+								{                                    
 									neutrons[hi].Add(tch);
 									neutronsCount++;
 								}						

@@ -30,6 +30,7 @@ namespace lms
             for (int detector = 0; detector < frame.Length; detector++)
             {
                 int[] s = frame[detector];
+                //for (int i = 0; i < s.Length;)
                 Parallel.For(0, s.Length, i =>
                 {
                     int ch = s[i];

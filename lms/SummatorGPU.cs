@@ -58,9 +58,33 @@ namespace lms
                 spectrum[i] = Gpu.CopyToHost(memory[i]);
             return spectrum;
         }
-		
+
         [GpuManaged]
-		private static void AddValuesGPU(int[][] neutrons)
+        public override int[][] CalcFrame(int[][] frame)
+        {
+            int s = strob;
+            int c = channelsCount;
+
+            int[][] array = new int[detectors.Length][];
+            for (int i = 0; i < array.Length; i++)
+                array[i] = new int[channelsCount];
+
+            for (int i = 0; i < frame.Length; i++)
+            {                                
+                gpu.For(0, frame[i].Length, index =>
+                {
+                    int ch = frame[i][index];
+                    int k1 = ch - s;
+                    if (k1 < 0) k1 = 0;
+                    int k2 = ch + s; if (k2 > c - 1) k2 = c - 1;
+                    for (int k = k1; k < k2; k++) array[i][k] += 1;
+                });                
+            }
+            return array;
+        }
+
+        //[GpuManaged]
+        private static void AddValuesGPU(int[][] neutrons)
 		{
 			int s = strob;
 			int c = channelsCount;
