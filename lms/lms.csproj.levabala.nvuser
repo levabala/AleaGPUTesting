@@ -1,6 +1,6 @@
 ﻿<ProjectSettingsModel DefinitionId="a218e900-1199-4ab1-a767-7976786f04d4" DisplayName="Nexus Project User Settings" xmlns="clr-namespace:Ark.PropertyModel;assembly=Ark">
     <SettingsPointModel DefinitionId="3eb7ba04-016d-475e-b0ff-daa5f0e59a08" DisplayName="Launch">
-        <Property Name="Arguments" Value="-raw *_raw.001 -low -dor -frames 50 -o lowG1 -w 32 -mks 40000 -ch0 100 -strob 250" />
+        <Property Name="Arguments" Value="-raw 012559_raw.001 -o lmsG2 -frames 15 -strob 100 -sum -det 0 -det 1" />
         <Property Name="LaunchSettingsModifiedByUser" Value="True" />
         <Property Name="WorkingDirectory" Value="D:\Documents\Projects\LM_WORLD\Files\012559_raw.001\" />
     </SettingsPointModel>

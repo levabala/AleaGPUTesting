@@ -14,7 +14,7 @@ namespace lms
         public SummatorCPU(int channelsCount, int channelWidth, int[] detectors, int strob) 
             : base(channelsCount, channelWidth, detectors, strob)
         {
-            
+            Console.WriteLine("__SummatorCPU__");
         }
 
         public override int[][] GetSpectrum()
@@ -22,6 +22,15 @@ namespace lms
             int[][] output = spectrum.ToArray();
             spectrum = createSpectrumArray();
             return output;
+        }
+
+        public override void ClearSpectrum()
+        {
+            for (int i = 0; i < spectrum.Length; i++)
+                Parallel.For(0, spectrum[i].Length, index =>
+                {
+                    spectrum[i][index] = 0;
+                });
         }
 
         public override int[][] CalcFrame(int[][] frame)

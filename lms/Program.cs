@@ -95,11 +95,14 @@ namespace lms
 
         private static readonly object myLock = new object();
         public static void SummatorCall(object arg, int number, ref int savesDone)
-		{
+		{            
 			int[][] neutrons = arg as int[][];
-            int[][] spectr = summator.CalcFrame(neutrons);
-            summator.SaveSpectrum(ref_out, number, spectr);
-            savesDone++;
+            lock (myLock)
+            {
+                int[][] spectr = summator.CalcFrame(neutrons);
+                //summator.SaveSpectrum(ref_out, number, spectr);
+                savesDone++;
+            }
         }
 
 		public static void init(string[] args)

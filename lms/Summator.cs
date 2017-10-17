@@ -46,13 +46,9 @@ namespace lms
             return spectrum;
         }
 
-        public void ClearSpectrum()
+        virtual public void ClearSpectrum()
         {            
-            for (int i = 0; i < spectrum.Length; i++)
-                Parallel.For(0, spectrum[i].Length, index =>
-                {
-                    spectrum[i][index] = 0;
-                });                
+            
         }
         
         public void SaveSpectrum(string folder, int num)
