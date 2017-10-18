@@ -103,19 +103,13 @@ namespace lms
             dim3 blockDim = new dim3((int)Math.Ceiling((decimal)(width / THREADS_PER_BLOCK)), 1);
             dim3 gridDim = new dim3((int)Math.Ceiling((decimal)(width / blockDim.x)), height);            
             var lp = new LaunchParam(gridDim, blockDim);  
-            
-            /*dim3 blockDim = new dim3((int)Math.Ceiling((decimal)(channelsCount / strob)), frame.Length);
-            dim3 gridDim = new dim3((int)Math.Ceiling((decimal)(channelsCount / blockDim.x)), 1);
-            var lp = new LaunchParam(gridDim, blockDim);*/
 
             Pitched2DPtr<int> ptr = mem.Pitched2DPtr;            
             gpu.Launch(Kernel, lp, ptr, frame, strob, detectors.Length, channelsCount);
             
             int[,] array = Gpu.Copy2DToHost(mem);
 
-            mem.Dispose();
-
-            //ClearSpectrum();            
+            mem.Dispose();          
             
             return array;
         }
@@ -130,16 +124,18 @@ namespace lms
             for (int i = 0; i < array.Length; i++)
                 array[i] = new int[channelsCount];
 
-            for (int i = 0; i < frame.Length; i++)
+            //for (int i = 0; i < frame.Length; i++)
+            gpu.For(0, frame.Length, i =>
             {
-                gpu.For(0, frame[i].Length, index =>
+                //gpu.For(0, frame[i].Length, index =>
+                for (int index = 0; index < frame[i].Length; index++)
                 {
                     int ch = frame[i][index];
                     int k1 = ch - s; if (k1 < 0) k1 = 0;
                     int k2 = ch + s; if (k2 > c - 1) k2 = c - 1;
                     for (int k = k1; k < k2; k++) array[i][k] += 1;
-                });
-            }
+                }//);
+            });
             return array;
         }
 
