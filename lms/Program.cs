@@ -96,8 +96,8 @@ namespace lms
         private static readonly object myLock = new object();
         public static void SummatorCall(object arg, int number, ref int savesDone)
 		{
-            //int[][] neutrons = arg as int[][];
-            /*if (summator.GetType() == typeof(SummatorCPU))
+            /*int[][] neutrons = arg as int[][];
+            if (summator.GetType() == typeof(SummatorCPU))
             {
                 int[][] spectr = summator.CalcFrame2d(neutrons);
                 summator.SaveSpectrum(ref_out, number, spectr);
@@ -118,15 +118,15 @@ namespace lms
                 int[][] spectr3 = summator2.CalcFrame2d(neutrons);
 
                 int[,] spectr2 = summator.CalcFrameJagged(neutrons);
-                int[][] spectr = summator.CalcFrame2d(neutrons);                                                                
+                //int[][] spectr = summator.CalcFrame2d(neutrons);                                                                
 
-                int[][] difference = new int[spectr.Length][];
+                int[][] difference = new int[spectr3.Length][];
                 for (int i = 0; i < difference.Length; i++)
                 {
-                    int[] diff = new int[spectr[i].Length];
+                    int[] diff = new int[spectr3[i].Length];
                     Parallel.For(0, diff.Length, index =>
                     {
-                        diff[index] = (int)Math.Abs(spectr3[i][index] - spectr[i][index]);
+                        diff[index] = Math.Abs(spectr3[i][index] - spectr2[i,index]);
                     });
                     difference[i] = diff;
                 }

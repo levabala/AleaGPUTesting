@@ -68,18 +68,17 @@ namespace lms
             }*/
         }
 
-        private static void Kernel(Pitched2DPtr<int> result, int[][] frame, int strob, int height, int width)
+        private static void Kernel(Pitched2DPtr<int> result, int[][] frame, int frameMaxLength, int strob, int height, int width)
         {
             int detI = blockIdx.y * blockDim.y + threadIdx.y;
-            int chI = blockIdx.x * blockDim.x + threadIdx.x;
+            int chI = blockIdx.x * blockDim.x + threadIdx.x;            
 
-            //result[detI, chI] = chI;            
-
-            if (detI >= frame.Length || chI >= frame[detI].Length)
+            if (detI >= frame.Length || chI >= frameMaxLength)
                 return;            
 
             int ch = frame[detI][chI];
-            
+            //result[detI, ch] += 1;
+
             int k1 = ch - strob;
             if (k1 < 0) k1 = 0;
             int k2 = ch + strob; if (k2 > width - 1) k2 = width - 1;            
@@ -94,24 +93,34 @@ namespace lms
                 if (frame[i].Length > maxEventsCount)
                     maxEventsCount = frame[i].Length;
 
-            int THREADS_PER_BLOCK = 64;// strob;
+            /*int THREADS_PER_BLOCK = 64;// strob;
             int width = maxEventsCount;
             int height = frame.Length;
 
             DeviceMemory2D<int> mem = new DeviceMemory2D<int>(gpu.Context, new IntPtr(detectors.Length), new IntPtr(channelsCount));
 
-            dim3 blockDim = new dim3((int)Math.Ceiling((decimal)(width / THREADS_PER_BLOCK)), 1);
-            dim3 gridDim = new dim3((int)Math.Ceiling((decimal)(width / blockDim.x)), height);            
-            var lp = new LaunchParam(gridDim, blockDim);  
+            dim3 blockDim = new dim3((int)Math.Ceiling((decimal)width / THREADS_PER_BLOCK), 1);
+            dim3 gridDim = new dim3((int)Math.Ceiling((decimal)width / blockDim.x), height);            
+            var lp = new LaunchParam(gridDim, blockDim);*/
 
-            Pitched2DPtr<int> ptr = mem.Pitched2DPtr;            
-            gpu.Launch(Kernel, lp, ptr, frame, strob, detectors.Length, channelsCount);
+            int width = maxEventsCount;
+            int height = frame.Length;
+            int THREADS_PER_BLOCK = 32768;
+
+            DeviceMemory2D<int> mem = new DeviceMemory2D<int>(gpu.Context, new IntPtr(detectors.Length), new IntPtr(channelsCount));
+
+            dim3 blockDim = new dim3((int)Math.Ceiling((decimal)width / THREADS_PER_BLOCK), height);
+            dim3 gridDim = new dim3((int)Math.Ceiling((decimal)width / blockDim.x), 1);
+            var lp = new LaunchParam(gridDim, blockDim);
+
+            Pitched2DPtr<int> ptr = mem.Pitched2DPtr;
+            gpu.Launch(Kernel, lp, ptr, frame, maxEventsCount, strob, detectors.Length, channelsCount);
             
             int[,] array = Gpu.Copy2DToHost(mem);
 
             mem.Dispose();          
             
-            return array;
+           return array;
         }
 
         [GpuManaged]
