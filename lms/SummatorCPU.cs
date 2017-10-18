@@ -33,7 +33,7 @@ namespace lms
                 });
         }
 
-        public override int[][] CalcFrame(int[][] frame)
+        public override int[][] CalcFrame2d(int[][] frame)
         {
             int[][] spectr = createSpectrumArray();
             for (int detector = 0; detector < frame.Length; detector++)

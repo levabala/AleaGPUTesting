@@ -80,7 +80,7 @@ namespace lms
         {			
 			init(args);			
                     
-			summator = new SummatorGPU(ref_chan, max_mks, dets.ToArray(), strob);
+			summator = new SummatorCPU(ref_chan, max_mks, dets.ToArray(), strob);
 			Parser.Parse(
                 namelist, strob, ref_chan, max_mks, ref_frames, ref_tau, 
                 kt, dets.ToArray(), ref_ch0, SummatorCall, ParsingComplete);
@@ -97,12 +97,18 @@ namespace lms
         public static void SummatorCall(object arg, int number, ref int savesDone)
 		{            
 			int[][] neutrons = arg as int[][];
-            lock (myLock)
+            if (summator.GetType() == typeof(SummatorCPU))
             {
-                int[][] spectr = summator.CalcFrame(neutrons);
-                //summator.SaveSpectrum(ref_out, number, spectr);
+                int[][] spectr = summator.CalcFrame2d(neutrons);
+                summator.SaveSpectrum(ref_out, number, spectr);
                 savesDone++;
             }
+            else if (summator.GetType() == typeof(SummatorGPU))
+            {
+                int[,] spectr = summator.CalcFrameJagged(neutrons);
+                summator.SaveSpectrum(ref_out, number, spectr);
+                savesDone++;
+            }                
         }
 
 		public static void init(string[] args)

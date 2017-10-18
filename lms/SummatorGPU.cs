@@ -25,7 +25,7 @@ namespace lms
         }
 		
 		private static void initGpu(int ds, int chc){
-			gpu = Gpu.Default;
+			gpu = Gpu.Default;            
 			memory = new DeviceMemory2D<int>(gpu.Context, new IntPtr(ds), new IntPtr(chc));
 		}
 				
@@ -68,47 +68,60 @@ namespace lms
             }*/
         }
 
-        private static void Kernel(Pitched2DPtr<int> result, int[][] frame, int strob, int channelsCount)
+        private static void Kernel(Pitched2DPtr<int> result, int[][] frame, int strob, int height, int width)
         {
             int detI = blockIdx.y * blockDim.y + threadIdx.y;
-            int chI = blockIdx.x * blockDim.x + threadIdx.x;            
+            int chI = blockIdx.x * blockDim.x + threadIdx.x;
 
-            int ch = frame[detI][chI];
+            //result[detI, chI] = chI;            
 
-            //result[detI, chI] = chI;
-            if (detI >= frame.Length || chI >= channelsCount)
-                return;            
+            if (detI >= frame.Length || chI >= frame[detI].Length)
+                return;
+
+            int ch = frame[detI][chI];            
 
             int k1 = ch - strob;
             if (k1 < 0) k1 = 0;
-            int k2 = ch + strob; if (k2 > channelsCount - 1) k2 = channelsCount - 1;            
+            int k2 = ch + strob; if (k2 > width - 1) k2 = width - 1;            
             for (int k = k1; k < k2; k++) result[detI, k] += 1;
         }
 
         [GpuManaged]
-        public override int[][] CalcFrame(int[][] frame)
+        public override int[,] CalcFrameJagged(int[][] frame)
         {
-            int THREADS_PER_BLOCK = strob;
-            dim3 blockDim = new dim3((int)Math.Ceiling((decimal)(channelsCount / strob)), frame.Length);
-            dim3 gridDim = new dim3((int)Math.Ceiling((decimal)(channelsCount / blockDim.x)), 1);            
-            var lp = new LaunchParam(gridDim, blockDim);
-            //var lp = new LaunchParam(16, 256);
+            int maxEventsCount = 0;
+            for (int i = 0; i < frame.Length; i++)
+                if (frame[i].Length > maxEventsCount)
+                    maxEventsCount = frame[i].Length;
 
-            Pitched2DPtr<int> ptr = memory.Pitched2DPtr;            
-            gpu.Launch(Kernel, lp, ptr, frame, strob, channelsCount);
+            int THREADS_PER_BLOCK = 64;// strob;
+            int width = maxEventsCount;
+            int height = frame.Length;
 
-            //int[] array = new int[detectors.Length][];
-            int[,] array = Gpu.Copy2DToHost(memory);
+            DeviceMemory2D<int> mem = new DeviceMemory2D<int>(gpu.Context, new IntPtr(detectors.Length), new IntPtr(channelsCount));
 
+            dim3 blockDim = new dim3((int)Math.Ceiling((decimal)(width / THREADS_PER_BLOCK)), 1);
+            dim3 gridDim = new dim3((int)Math.Ceiling((decimal)(width / blockDim.x)), height);            
+            var lp = new LaunchParam(gridDim, blockDim);  
+            
+            /*dim3 blockDim = new dim3((int)Math.Ceiling((decimal)(channelsCount / strob)), frame.Length);
+            dim3 gridDim = new dim3((int)Math.Ceiling((decimal)(channelsCount / blockDim.x)), 1);
+            var lp = new LaunchParam(gridDim, blockDim);*/
 
-            ClearSpectrum();            
+            Pitched2DPtr<int> ptr = mem.Pitched2DPtr;            
+            gpu.Launch(Kernel, lp, ptr, frame, strob, detectors.Length, channelsCount);
+            
+            int[,] array = Gpu.Copy2DToHost(mem);
 
-            return new int[0][];
-            //return array;
+            mem.Dispose();
+
+            //ClearSpectrum();            
+            
+            return array;
         }
 
         [GpuManaged]
-        /*public override int[][] CalcFrame(int[][] frame)
+        public override int[][] CalcFrame2d(int[][] frame)
         {
             int s = strob;
             int c = channelsCount;
@@ -129,7 +142,7 @@ namespace lms
                 });
             }
             return array;
-        }*/
+        }
 
         //[GpuManaged]
         private static void AddValuesGPU(int[][] neutrons)
