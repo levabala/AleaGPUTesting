@@ -80,7 +80,7 @@ namespace lms
         {			
 			init(args);			
                     
-			summator = new SummatorCPU(ref_chan, max_mks, dets.ToArray(), strob);
+			summator = new SummatorGPU(ref_chan, max_mks, dets.ToArray(), strob);
 			Parser.Parse(
                 namelist, strob, ref_chan, max_mks, ref_frames, ref_tau, 
                 kt, dets.ToArray(), ref_ch0, SummatorCall, ParsingComplete);
@@ -95,9 +95,9 @@ namespace lms
 
         private static readonly object myLock = new object();
         public static void SummatorCall(object arg, int number, ref int savesDone)
-		{            
-			int[][] neutrons = arg as int[][];
-            if (summator.GetType() == typeof(SummatorCPU))
+		{
+            //int[][] neutrons = arg as int[][];
+            /*if (summator.GetType() == typeof(SummatorCPU))
             {
                 int[][] spectr = summator.CalcFrame2d(neutrons);
                 summator.SaveSpectrum(ref_out, number, spectr);
@@ -108,7 +108,31 @@ namespace lms
                 int[,] spectr = summator.CalcFrameJagged(neutrons);
                 summator.SaveSpectrum(ref_out, number, spectr);
                 savesDone++;
-            }                
+            }*/
+            lock (myLock)
+            {
+                int[][] neutrons = arg as int[][];
+
+
+                Summator summator2 = new SummatorCPU(ref_chan, max_mks, dets.ToArray(), strob);
+                int[][] spectr3 = summator2.CalcFrame2d(neutrons);
+
+                int[,] spectr2 = summator.CalcFrameJagged(neutrons);
+                int[][] spectr = summator.CalcFrame2d(neutrons);                                                                
+
+                int[][] difference = new int[spectr.Length][];
+                for (int i = 0; i < difference.Length; i++)
+                {
+                    int[] diff = new int[spectr[i].Length];
+                    Parallel.For(0, diff.Length, index =>
+                    {
+                        diff[index] = (int)Math.Abs(spectr3[i][index] - spectr[i][index]);
+                    });
+                    difference[i] = diff;
+                }
+
+                savesDone++;
+            }
         }
 
 		public static void init(string[] args)

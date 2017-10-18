@@ -76,10 +76,10 @@ namespace lms
             //result[detI, chI] = chI;            
 
             if (detI >= frame.Length || chI >= frame[detI].Length)
-                return;
+                return;            
 
-            int ch = frame[detI][chI];            
-
+            int ch = frame[detI][chI];
+            
             int k1 = ch - strob;
             if (k1 < 0) k1 = 0;
             int k2 = ch + strob; if (k2 > width - 1) k2 = width - 1;            
@@ -131,14 +131,13 @@ namespace lms
                 array[i] = new int[channelsCount];
 
             for (int i = 0; i < frame.Length; i++)
-            {                
+            {
                 gpu.For(0, frame[i].Length, index =>
                 {
                     int ch = frame[i][index];
-                    int k1 = ch - s;
-                    if (k1 < 0) k1 = 0;
+                    int k1 = ch - s; if (k1 < 0) k1 = 0;
                     int k2 = ch + s; if (k2 > c - 1) k2 = c - 1;
-                    for (int k = k1; k < k2; k++) array[i][k] += 1;                    
+                    for (int k = k1; k < k2; k++) array[i][k] += 1;
                 });
             }
             return array;
