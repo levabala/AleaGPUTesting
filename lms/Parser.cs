@@ -87,7 +87,7 @@ namespace lms
                             case 0xf6: f6 = (long)lo | ((long)f4) << 24; break;
                             case 0xf7: f7 = (long)lo | ((long)f4) << 24; break;
                             case 0xf8: f8 = (long)lo | ((long)f4) << 24; break;
-                            case 0xfb: fbeg = (f0 | ((long)(f4) << 24)); break;
+                            case 0xfb: fbeg = (lo + ((long)(f4) << 24)); break;
                             case 0xfa:
                                 fend = (long)lo | ((long)(f4) << 24); frame += 1;
                                 if (frame % framesCount == 0)

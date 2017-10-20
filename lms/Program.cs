@@ -96,9 +96,9 @@ namespace lms
         private static readonly object myLock = new object();
         public static void SummatorCall(object arg, int number, ref int savesDone)
 		{
-            /*int[][] neutrons = arg as int[][];
+            int[][] neutrons = arg as int[][];
             if (summator.GetType() == typeof(SummatorCPU))
-            {
+            {                
                 int[][] spectr = summator.CalcFrame2d(neutrons);
                 summator.SaveSpectrum(ref_out, number, spectr);
                 savesDone++;
@@ -108,14 +108,14 @@ namespace lms
                 int[,] spectr = summator.CalcFrameJagged(neutrons);
                 summator.SaveSpectrum(ref_out, number, spectr);
                 savesDone++;
-            }*/
-            lock (myLock)
+            }
+            /*lock (myLock)
             {
                 int[][] neutrons = arg as int[][];
 
 
                 Summator summator2 = new SummatorCPU(ref_chan, max_mks, dets.ToArray(), strob);
-                int[][] spectr3 = summator2.CalcFrame2d(neutrons);
+                int[][] spectr3 = summator2.CalcFrame2d(neutrons);                
 
                 int[,] spectr2 = summator.CalcFrameJagged(neutrons);
                 //int[][] spectr = summator.CalcFrame2d(neutrons);                                                                
@@ -124,15 +124,13 @@ namespace lms
                 for (int i = 0; i < difference.Length; i++)
                 {
                     int[] diff = new int[spectr3[i].Length];
-                    Parallel.For(0, diff.Length, index =>
-                    {
-                        diff[index] = Math.Abs(spectr3[i][index] - spectr2[i,index]);
-                    });
+                    for (int index = 0; index < diff.Length; index++)
+                        diff[index] = Math.Abs(spectr3[i][index] - spectr2[i,index]);                    
                     difference[i] = diff;
                 }
 
                 savesDone++;
-            }
+            }*/
         }
 
 		public static void init(string[] args)
