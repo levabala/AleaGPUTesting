@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Alea;
+using Alea.CSharp;
 using Alea.Parallel;
 using System.Diagnostics;
 using System.IO;
@@ -77,15 +78,13 @@ namespace lms
 		static Summator summator;
 
 		static void Main(string[] args)
-        {			
-			init(args);			
-                    
-			summator = new SummatorGPU(ref_chan, max_mks, dets.ToArray(), strob);
-			Parser.Parse(
+        {            
+            init(args);
+
+            summator = new SummatorGPU(ref_chan, max_mks, dets.ToArray(), strob);
+            Parser.Parse(
                 namelist, strob, ref_chan, max_mks, ref_frames, ref_tau, 
                 kt, dets.ToArray(), ref_ch0, SummatorCall, ParsingComplete);
-			
-            Console.ReadKey();
         }
 
         public static void ParsingComplete()

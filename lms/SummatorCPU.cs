@@ -54,22 +54,10 @@ namespace lms
 
         public override int[][] CalcFrame2d(int[][] frame)
         {
-            int[][] spectr = createSpectrumArray();
-            //for (int detector = 0; detector < frame.Length; detector++)
-            int[][] channels = createSpectrumArray();
-            Parallel.For(0, frame.Length, detector =>
-            {
-                int[] s = frame[detector];
-                for (int i = 0; i < s.Length; i++)
-                {
-                    int ch = s[i];
-                    channels[detector][ch] += 1;
-                }
-            });
-            //Parallel.For(0, frame.Length, detector =>
-            //{
-            for (int detector = 0; detector < frame.Length; detector++)
-                //for (int ch = 0; ch < channelsCount; ch++)
+            int[][] spectr = createSpectrumArray();            
+            int[][] channels = calcChannels(frame);
+            
+            for (int detector = 0; detector < frame.Length; detector++)                
                 Parallel.For(0, channelsCount, ch =>
                 {
                     int k1 = ch - strob; if (k1 < 0) k1 = 0;
@@ -78,8 +66,7 @@ namespace lms
                     for (int k = k1; k < k2; k++)
                         sum += channels[detector][k];
                     spectr[detector][ch] = sum;
-                });
-            //});
+                });            
 
             int[][] spectr2 = CalcFrame2d2(frame);
 
@@ -93,6 +80,36 @@ namespace lms
             }
 
             return spectr;
+        }
+
+        public int[][] calcChannels(int[][] frame)
+        {
+            int[][] channels = createSpectrumArray();
+            Parallel.For(0, frame.Length, detector =>
+            {
+                int[] s = frame[detector];
+                for (int i = 0; i < s.Length; i++)
+                {
+                    int ch = s[i];
+                    channels[detector][ch] += 1;
+                }
+            });
+            return channels;
+        }
+
+        public int[,] calcChannelsJagged(int[][] frame)
+        {
+            int[,] channels = new int[frame.Length, channelsCount];
+            Parallel.For(0, frame.Length, detector =>
+            {
+                int[] s = frame[detector];
+                for (int i = 0; i < s.Length; i++)
+                {
+                    int ch = s[i];
+                    channels[detector,ch] += 1;
+                }
+            });
+            return channels;
         }
 
         public override void AddValues(int[][] neutrons)

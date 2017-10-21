@@ -68,8 +68,9 @@ namespace lms
             }*/
         }
 
-        private static void KernelNeutronsSum(int[,] channels, int[][] frame, int maxFrameLength, int channelsCount)
+        private static void KernelNeutronsSum(Pitched2DPtr<int> ptr, int[][] frame, int maxFrameLength, int channelsCount)
         {
+            
             int detI = blockIdx.y * blockDim.y + threadIdx.y;
             int chI = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -77,7 +78,7 @@ namespace lms
                 return;
 
             int ch = frame[detI][chI];
-            channels[detI, ch] = channels[detI, ch] + 1;
+            ptr[detI, ch] = ptr[detI, ch] + 1;
         }
 
         private static void KernelStrobApply(int[,] spectrum, int[,] channels, int width, int height, int strob)
@@ -113,17 +114,22 @@ namespace lms
 
             int THREADS_COUNT = 1024;
             dim3 blockDim = new dim3(
-                (int)Math.Ceiling((decimal)maxEventsCount / THREADS_COUNT),
+                1,//(int)Math.Ceiling((decimal)maxEventsCount / THREADS_COUNT),
                 1
                 );
             dim3 gridDim = new dim3(
-                (int)Math.Ceiling((decimal)maxEventsCount / blockDim.x),
+                maxEventsCount,//(int)Math.Ceiling((decimal)maxEventsCount / blockDim.x),
                 frame.Length
                 );
             LaunchParam lp = new LaunchParam(gridDim, blockDim);
-            int[,] channels = new int[frame.Length, channelsCount];
+            //int[,] channels = new int[frame.Length, channelsCount];
+            DeviceMemory2D<int> channelsMem = new DeviceMemory2D<int>(gpu.Context, new IntPtr(frame.Length), new IntPtr(channelsCount));
+            Pitched2DPtr<int> ptr = channelsMem.Pitched2DPtr;
 
-            gpu.Launch(KernelNeutronsSum, lp, channels, frame, maxEventsCount, channelsCount);
+            gpu.Launch(
+                KernelNeutronsSum, lp, ptr, frame, 
+                maxEventsCount, channelsCount
+                );
 
 
             THREADS_COUNT = 64;
@@ -138,7 +144,25 @@ namespace lms
             lp = new LaunchParam(gridDim, blockDim);
             int[,] spectrum = new int[frame.Length, channelsCount];
 
-            gpu.Launch(KernelStrobApply, lp, spectrum, channels, channelsCount, frame.Length, strob);
+            SummatorCPU summator = new SummatorCPU(channelsCount, channelWidth, detectors, strob);
+            int[,] channelsCPU = summator.calcChannelsJagged(frame);
+            int[][] spectrCPU = summator.CalcFrame2d(frame);
+
+            int[,] channels = Gpu.Copy2DToHost(channelsMem);
+            gpu.Launch(
+                KernelStrobApply, lp, spectrum, channelsCPU, channelsCount, 
+                frame.Length, strob
+                );            
+
+            int[,] difference = new int[detectors.Length,channelsCount];
+            for (int i = 0; i < detectors.Length; i++)            
+                for (int index = 0; index < channelsCount; index++)
+                    difference[i,index] = channels[i,index] - channelsCPU[i,index];
+
+            int[,] difference2 = new int[detectors.Length, channelsCount];
+            for (int i = 0; i < detectors.Length; i++)
+                for (int index = 0; index < channelsCount; index++)
+                    difference2[i, index] = spectrCPU[i][index] - spectrum[i, index];
 
 
             return spectrum;
