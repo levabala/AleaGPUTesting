@@ -9,7 +9,7 @@ using Alea.CSharp;
 
 namespace lms
 {
-    class SummatorGPU : Summator
+    public class SummatorGPU : Summator
     {        
         static DeviceMemory2D<int> memory;		
 		static Gpu gpu;        

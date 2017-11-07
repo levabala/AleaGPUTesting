@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace lms
 {
-    class SummatorCPU : Summator
+    public class SummatorCPU : Summator
     {
 		/*public static double[][] channels; //detector - channel_value
 		public static int channelsCount, channelWidth, strob;

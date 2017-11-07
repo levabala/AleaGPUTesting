@@ -9,13 +9,13 @@ using System.Threading.Tasks;
 
 namespace lms
 {
-    class Parser
+    public class Parser
     {
-        public delegate void SummatorAction<T1, T2, T3>(T1 arg1, T2 agr2, ref T3 arg3);
+        public delegate void SummatorAction<T1, T2, T3, T4>(T1 arg1, T2 agr2, T3 arg3, ref T4 arg4);
         public static void Parse(
             List<string> filesNames, int strob, int channelsCount, int channelWidth, 
             int framesCount, int tau, double[] kt, int[] detectors, int channel0,
-            SummatorAction<object, int, int> SummatorCall, Action ParsingCompleted)
+            SummatorAction<object, int, double, int> SummatorCall, Action ParsingCompleted)
 		{
 			int frame = 0;
 			int save_count = 0;
@@ -52,10 +52,13 @@ namespace lms
 				long f5 = 0;
 				long f6 = 0;
 				long f7 = 0;
-				long f8 = 0;				
+				long f8 = 0;
 
-				List<int>[] neutrons = new List<int>[detectors.Length];
-				for (int d = 0; d < neutrons.Length; d++)
+                int maxDetector = detectors.Max();
+
+
+                List<int>[] neutrons = new List<int>[maxDetector+1];
+				for (int d = 0; d <= maxDetector; d++)
 				{
 					neutrons[d] = new List<int>();
 				}
@@ -103,13 +106,14 @@ namespace lms
                                     
                                     Thread summatorThread = new Thread((object arg) =>
                                     {
-                                        save_count++;
-                                        SummatorCall(arg, save_count, ref saves_done);                                        
+                                        save_count++;                                                                                
 
                                         speed_x = (float)(spec_time / sw.Elapsed.TotalSeconds);
                                         speed_mbs = (float)(buf.Length / sw2.Elapsed.TotalSeconds / 1000000.0);
 
-                                        float parsing = ((float)pos / len) * 100;
+                                        double parsing = ((float)pos / len) * 100;
+
+                                        SummatorCall(arg, save_count, parsing, ref saves_done);
 
                                         Console.WriteLine(
                                         "saves: {0,5}  speed: {3,6:f2}x  threads: {4,2}  time: {1,8:f2}  frame: {2,6}  parsing: {5,4:f1}%",//  neutronsCount: {4}  neutronsDelta: {5}", 
@@ -128,7 +132,7 @@ namespace lms
                         }
 
 
-                        if (hi < detectors.Length && detectorsHashSet.Contains(hi))//detectors.Contains(hi))
+                        if (hi < detectors.Max() && detectorsHashSet.Contains(hi))//detectors.Contains(hi))
                         {
                             long t = (long)lo | ((long)f4) << 24;
                             if (t > fbeg && fbeg > fend)

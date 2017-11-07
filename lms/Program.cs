@@ -93,7 +93,7 @@ namespace lms
         }
 
         private static readonly object myLock = new object();
-        public static void SummatorCall(object arg, int number, ref int savesDone)
+        public static void SummatorCall(object arg, int number, double parsing, ref int savesDone)
 		{
             int[][] neutrons = arg as int[][];
             if (summator.GetType() == typeof(SummatorCPU))

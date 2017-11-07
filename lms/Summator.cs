@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace lms
 {
-    abstract class Summator
+    public abstract class Summator
     {		
 		public static int[][] spectrum; //detector - channel_value
 		public static int channelsCount, channelWidth, strob;
